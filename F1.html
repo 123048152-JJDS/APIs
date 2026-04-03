@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 Explorer</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;800;900&family=Barlow:wght@300;400;500&family=Share+Tech+Mono&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --red: #e8002d;
+            --red2: #ff1e3c;
+            --dark: #0a0a0a;
+            --dark2: #111111;
+            --dark3: #1a1a1a;
+            --card: #141414;
+            --border: #2a2a2a;
+            --muted: #444;
+            --text: #e8e8e8;
+            --dim: #888;
+            --gold: #f5c842;
+            --silver: #b0b8c1;
+            --bronze: #cd7f32;
+            --mono: 'Share Tech Mono', monospace;
+            --head: 'Barlow Condensed', sans-serif;
+            --body: 'Barlow', sans-serif;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--dark);
+            color: var(--text);
+            font-family: var(--body);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── NOISE OVERLAY ── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+            opacity: 0.025;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── HEADER ── */
+        header {
+            position: relative;
+            padding: 0 2rem;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            background: var(--dark2);
+            z-index: 10;
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--red), transparent 60%);
+        }
+
+        .logo {
+            font-family: var(--head);
+            font-size: 1.6rem;
+            font-weight: 900;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .logo span {
+            color: var(--red);
+        }
+
+        .logo-badge {
+            background: var(--red);
+            color: #fff;
+            font-size: 0.55rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            padding: 2px 6px;
+            border-radius: 2px;
+            vertical-align: middle;
+        }
+
+        .api-tag {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            color: var(--dim);
+            border: 1px solid var(--border);
+            padding: 4px 10px;
+            border-radius: 2px;
+        }
+
+        /* ── LAYOUT ── */
+        .app {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            min-height: calc(100vh - 70px);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ── SIDEBAR ── */
+        aside {
+            background: var(--dark2);
+            border-right: 1px solid var(--border);
+            padding: 1.5rem 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .sidebar-label {
+            font-family: var(--head);
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            color: var(--muted);
+            text-transform: uppercase;
+            padding: 0.5rem 1.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: var(--dim);
+            font-family: var(--head);
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            text-align: left;
+            width: 100%;
+            transition: all 0.15s;
+            border-left: 3px solid transparent;
+            position: relative;
+        }
+
+        .nav-btn:hover {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .nav-btn.active {
+            color: #fff;
+            border-left-color: var(--red);
+            background: rgba(232, 0, 45, 0.08);
+        }
+
+        .nav-icon {
+            font-size: 1rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* ── MAIN ── */
+        main {
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        /* ── SECTION HEADER ── */
+        .section-head {
+            display: flex;
+            align-items: baseline;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-family: var(--head);
+            font-size: 2rem;
+            font-weight: 900;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+
+        .section-sub {
+            font-size: 0.75rem;
+            color: var(--dim);
+            font-family: var(--mono);
+        }
+
+        /* ── CONTROLS ── */
+        .controls {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        label {
+            font-family: var(--head);
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            color: var(--dim);
+            text-transform: uppercase;
+        }
+
+        select,
+        input {
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 0.85rem;
+            padding: 0.6rem 0.9rem;
+            border-radius: 3px;
+            outline: none;
+            min-width: 180px;
+            transition: border-color 0.15s;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        select:focus,
+        input:focus {
+            border-color: var(--red);
+        }
+
+        .select-wrap {
+            position: relative;
+        }
+
+        .select-wrap::after {
+            content: '▾';
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--dim);
+            pointer-events: none;
+            font-size: 0.8rem;
+        }
+
+        .btn {
+            background: var(--red);
+            color: #fff;
+            border: none;
+            padding: 0.65rem 1.4rem;
+            font-family: var(--head);
+            font-size: 1rem;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: background 0.15s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            background: var(--red2);
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn:disabled {
+            background: var(--muted);
+            cursor: not-allowed;
+        }
+
+        /* ── LOADER ── */
+        .loader {
+            display: none;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--dim);
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            padding: 2rem 0;
+        }
+
+        .loader.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border);
+            border-top-color: var(--red);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ── ERROR ── */
+        .error-box {
+            display: none;
+            background: rgba(232, 0, 45, 0.08);
+            border: 1px solid rgba(232, 0, 45, 0.3);
+            border-left: 3px solid var(--red);
+            padding: 1rem 1.2rem;
+            border-radius: 3px;
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            color: #ff6b7a;
+            margin-bottom: 1.5rem;
+        }
+
+        .error-box.show {
+            display: block;
+        }
+
+        /* ── RESULT TABLE ── */
+        .result-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        thead tr {
+            border-bottom: 2px solid var(--red);
+        }
+
+        th {
+            font-family: var(--head);
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--dim);
+            padding: 0.6rem 1rem;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        th.num {
+            text-align: right;
+        }
+
+        td {
+            padding: 0.65rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+
+        td.num {
+            text-align: right;
+            font-family: var(--mono);
+        }
+
+        tbody tr {
+            transition: background 0.1s;
+        }
+
+        tbody tr:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        /* Position badges */
+        .pos-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 3px;
+            font-family: var(--head);
+            font-weight: 800;
+            font-size: 0.9rem;
+            background: var(--dark3);
+            color: var(--dim);
+        }
+
+        .pos-badge.p1 {
+            background: var(--gold);
+            color: #000;
+        }
+
+        .pos-badge.p2 {
+            background: var(--silver);
+            color: #000;
+        }
+
+        .pos-badge.p3 {
+            background: var(--bronze);
+            color: #fff;
+        }
+
+        .pos-badge.dnf {
+            background: transparent;
+            border: 1px solid var(--muted);
+            font-size: 0.6rem;
+            color: var(--dim);
+            width: auto;
+            padding: 0 6px;
+        }
+
+        /* Driver number chip */
+        .drv-num {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 2px;
+            background: var(--dark3);
+            color: var(--dim);
+            border: 1px solid var(--border);
+            margin-right: 0.5rem;
+        }
+
+        /* Team color bar */
+        .team-bar {
+            display: inline-block;
+            width: 3px;
+            height: 14px;
+            border-radius: 2px;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        /* Fast lap */
+        .fast {
+            color: var(--gold);
+            font-weight: 700;
+        }
+
+        .fast::after {
+            content: ' ⚡';
+            font-size: 0.75em;
+        }
+
+        /* ── MEETINGS GRID ── */
+        .meetings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 1rem;
+        }
+
+        .meeting-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1.2rem 1.4rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .meeting-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--red);
+            transform: scaleY(0);
+            transition: transform 0.15s;
+        }
+
+        .meeting-card:hover {
+            border-color: var(--red);
+            background: rgba(232, 0, 45, 0.05);
+        }
+
+        .meeting-card:hover::before {
+            transform: scaleY(1);
+        }
+
+        .meeting-year {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            color: var(--dim);
+            margin-bottom: 0.3rem;
+        }
+
+        .meeting-name {
+            font-family: var(--head);
+            font-size: 1.1rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 0.3rem;
+        }
+
+        .meeting-circuit {
+            font-size: 0.78rem;
+            color: var(--dim);
+        }
+
+        .meeting-key-tag {
+            position: absolute;
+            top: 0.8rem;
+            right: 0.8rem;
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            color: var(--muted);
+            background: var(--dark3);
+            padding: 2px 6px;
+            border-radius: 2px;
+        }
+
+        /* ── WEATHER CARDS ── */
+        .weather-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1.2rem;
+        }
+
+        .stat-label {
+            font-family: var(--head);
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--dim);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-family: var(--head);
+            font-size: 2.4rem;
+            font-weight: 900;
+            line-height: 1;
+            color: #fff;
+        }
+
+        .stat-unit {
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: var(--dim);
+            margin-left: 2px;
+        }
+
+        .stat-range {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            color: var(--muted);
+            margin-top: 0.4rem;
+        }
+
+        /* ── CHAMPIONSHIP POINTS ── */
+        .pts-bar-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .pts-bar-bg {
+            flex: 1;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .pts-bar-fill {
+            height: 100%;
+            background: var(--red);
+            border-radius: 2px;
+            transition: width 0.6s ease;
+        }
+
+        /* ── WELCOME ── */
+        .welcome {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 60vh;
+            text-align: center;
+            gap: 1rem;
+        }
+
+        .welcome-icon {
+            font-size: 4rem;
+            line-height: 1;
+        }
+
+        .welcome-title {
+            font-family: var(--head);
+            font-size: 2.5rem;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .welcome-sub {
+            color: var(--dim);
+            font-size: 0.9rem;
+            max-width: 380px;
+            line-height: 1.6;
+        }
+
+        /* ── YEAR FILTER ── */
+        .year-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .year-tab {
+            font-family: var(--head);
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            padding: 0.35rem 0.9rem;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--dim);
+            cursor: pointer;
+            border-radius: 2px;
+            transition: all 0.15s;
+        }
+
+        .year-tab:hover {
+            color: var(--text);
+            border-color: var(--muted);
+        }
+
+        .year-tab.active {
+            background: var(--red);
+            color: #fff;
+            border-color: var(--red);
+        }
+
+        /* ── SECTION PANELS ── */
+        .panel {
+            display: none;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        /* ── SCROLL ── */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--dark2);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--muted);
+            border-radius: 3px;
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 700px) {
+            .app {
+                grid-template-columns: 1fr;
+            }
+
+            aside {
+                flex-direction: row;
+                overflow-x: auto;
+                padding: 0;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .nav-btn {
+                flex-direction: column;
+                gap: 0.2rem;
+                font-size: 0.7rem;
+                padding: 0.7rem 1rem;
+                border-left: none;
+                border-bottom: 3px solid transparent;
+            }
+
+            .nav-btn.active {
+                border-left-color: transparent;
+                border-bottom-color: var(--red);
+            }
+
+            .sidebar-label {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="logo">
+            🏎️ F1 <span>Explorer</span>
+            <span class="logo-badge">LIVE</span>
+        </div>
+        <div class="api-tag">openf1.org · v1</div>
+    </header>
+
+    <div class="app">
+
+        <!-- SIDEBAR -->
+        <aside>
+            <div class="sidebar-label">Consultas</div>
+            <button class="nav-btn active" onclick="showPanel('welcome')" id="nav-welcome">
+                <span class="nav-icon">🏁</span> Inicio
+            </button>
+            <button class="nav-btn" onclick="showPanel('meetings')" id="nav-meetings">
+                <span class="nav-icon">📅</span> Grandes Premios
+            </button>
+            <button class="nav-btn" onclick="showPanel('results')" id="nav-results">
+                <span class="nav-icon">🥇</span> Resultado Carrera
+            </button>
+            <button class="nav-btn" onclick="showPanel('laps')" id="nav-laps">
+                <span class="nav-icon">⏱️</span> Tiempos por Vuelta
+            </button>
+            <button class="nav-btn" onclick="showPanel('championship')" id="nav-championship">
+                <span class="nav-icon">🏆</span> Campeonato
+            </button>
+            <button class="nav-btn" onclick="showPanel('pits')" id="nav-pits">
+                <span class="nav-icon">🔧</span> Paradas en Pits
+            </button>
+            <button class="nav-btn" onclick="showPanel('weather')" id="nav-weather">
+                <span class="nav-icon">🌡️</span> Clima Sesión
+            </button>
+        </aside>
+
+        <!-- MAIN -->
+        <main>
+
+            <!-- WELCOME -->
+            <div class="panel active" id="panel-welcome">
+                <div class="welcome">
+                    <div class="welcome-icon">🏎️</div>
+                    <div class="welcome-title">F1 Explorer</div>
+                    <div class="welcome-sub">Consulta resultados, tiempos, campeonato y más de la Fórmula 1. Datos desde
+                        2023 vía OpenF1 API, sin autenticación.</div>
+                </div>
+            </div>
+
+            <!-- GRANDES PREMIOS -->
+            <div class="panel" id="panel-meetings">
+                <div class="section-head">
+                    <div class="section-title">Grandes Premios</div>
+                    <div class="section-sub">Selecciona un GP para usarlo en otras secciones</div>
+                </div>
+                <div class="year-tabs" id="year-tabs"></div>
+                <div id="loader-meetings" class="loader">
+                    <div class="spinner"></div> Cargando GPs…
+                </div>
+                <div id="err-meetings" class="error-box"></div>
+                <div class="meetings-grid" id="meetings-grid"></div>
+            </div>
+
+            <!-- RESULTADO CARRERA -->
+            <div class="panel" id="panel-results">
+                <div class="section-head">
+                    <div class="section-title">Resultado de Carrera</div>
+                    <div class="section-sub">Posiciones finales</div>
+                </div>
+                <div class="controls">
+                    <div class="field">
+                        <label>Meeting Key</label>
+                        <input type="text" id="res-meeting" placeholder="ej. 1281 o latest" value="latest">
+                    </div>
+                    <button class="btn" onclick="loadResults()">▶ Consultar</button>
+                </div>
+                <div id="loader-results" class="loader">
+                    <div class="spinner"></div> Cargando resultado…
+                </div>
+                <div id="err-results" class="error-box"></div>
+                <div id="results-info"
+                    style="margin-bottom:1rem;font-family:var(--mono);font-size:0.75rem;color:var(--dim)"></div>
+                <div class="result-wrap">
+                    <table id="results-table"></table>
+                </div>
+            </div>
+
+            <!-- TIEMPOS POR VUELTA -->
+            <div class="panel" id="panel-laps">
+                <div class="section-head">
+                    <div class="section-title">Tiempos por Vuelta</div>
+                    <div class="section-sub">Detalle sector por sector</div>
+                </div>
+                <div class="controls">
+                    <div class="field">
+                        <label>Meeting Key</label>
+                        <input type="text" id="laps-meeting" placeholder="ej. 1281 o latest" value="latest">
+                    </div>
+                    <div class="field">
+                        <label>Sesión</label>
+                        <div class="select-wrap">
+                            <select id="laps-session">
+                                <option value="">— carga sesiones —</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn" onclick="loadLapSessions()">🔍 Cargar sesiones</button>
+                </div>
+                <div class="controls" id="laps-driver-row" style="display:none">
+                    <div class="field">
+                        <label>Piloto</label>
+                        <div class="select-wrap">
+                            <select id="laps-driver">
+                                <option value="">— elige piloto —</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn" onclick="loadLaps()">▶ Ver vueltas</button>
+                </div>
+                <div id="loader-laps" class="loader">
+                    <div class="spinner"></div> Cargando vueltas…
+                </div>
+                <div id="err-laps" class="error-box"></div>
+                <div id="laps-info"
+                    style="margin-bottom:1rem;font-family:var(--mono);font-size:0.75rem;color:var(--dim)"></div>
+                <div class="result-wrap">
+                    <table id="laps-table"></table>
+                </div>
+            </div>
+
+            <!-- CAMPEONATO -->
+            <div class="panel" id="panel-championship">
+                <div class="section-head">
+                    <div class="section-title">Campeonato de Pilotos</div>
+                    <div class="section-sub">Standings tras cada carrera</div>
+                </div>
+                <div class="controls">
+                    <div class="field">
+                        <label>Meeting Key (Race)</label>
+                        <input type="text" id="champ-meeting" placeholder="ej. 1281 o latest" value="latest">
+                    </div>
+                    <button class="btn" onclick="loadChampionship()">▶ Consultar</button>
+                </div>
+                <div id="loader-champ" class="loader">
+                    <div class="spinner"></div> Cargando campeonato…
+                </div>
+                <div id="err-champ" class="error-box"></div>
+                <div class="result-wrap">
+                    <table id="champ-table"></table>
+                </div>
+            </div>
+
+            <!-- PITS -->
+            <div class="panel" id="panel-pits">
+                <div class="section-head">
+                    <div class="section-title">Paradas en Pits</div>
+                    <div class="section-sub">Tiempos de parada en boxes</div>
+                </div>
+                <div class="controls">
+                    <div class="field">
+                        <label>Meeting Key</label>
+                        <input type="text" id="pits-meeting" placeholder="ej. 1281 o latest" value="latest">
+                    </div>
+                    <button class="btn" onclick="loadPits()">▶ Consultar</button>
+                </div>
+                <div id="loader-pits" class="loader">
+                    <div class="spinner"></div> Cargando pits…
+                </div>
+                <div id="err-pits" class="error-box"></div>
+                <div class="result-wrap">
+                    <table id="pits-table"></table>
+                </div>
+            </div>
+
+            <!-- WEATHER -->
+            <div class="panel" id="panel-weather">
+                <div class="section-head">
+                    <div class="section-title">Clima de Sesión</div>
+                    <div class="section-sub">Temperatura, humedad y lluvia</div>
+                </div>
+                <div class="controls">
+                    <div class="field">
+                        <label>Meeting Key</label>
+                        <input type="text" id="wx-meeting" placeholder="ej. 1281 o latest" value="latest">
+                    </div>
+                    <div class="field">
+                        <label>Sesión</label>
+                        <div class="select-wrap">
+                            <select id="wx-session">
+                                <option value="">— carga sesiones —</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn" onclick="loadWeatherSessions()">🔍 Cargar sesiones</button>
+                    <button class="btn" id="wx-go-btn" onclick="loadWeather()" style="display:none">▶ Ver clima</button>
+                </div>
+                <div id="loader-wx" class="loader">
+                    <div class="spinner"></div> Cargando clima…
+                </div>
+                <div id="err-wx" class="error-box"></div>
+                <div id="wx-cards" class="weather-grid"></div>
+                <div class="result-wrap">
+                    <table id="wx-table"></table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        const BASE = 'https://api.openf1.org/v1';
+
+        // ── API helper ──────────────────────────────────────────────────────────
+        async function apiFetch(endpoint, params = {}) {
+            const q = new URLSearchParams(params).toString();
+            const url = `${BASE}/${endpoint}${q ? '?' + q : ''}`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json();
+        }
+
+        // ── Panel navigation ────────────────────────────────────────────────────
+        function showPanel(id) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('panel-' + id).classList.add('active');
+            document.getElementById('nav-' + id).classList.add('active');
+            if (id === 'meetings' && !meetingsLoaded) loadMeetings();
+        }
+
+        // ── Utils ───────────────────────────────────────────────────────────────
+        function fmtTime(sec) {
+            if (sec == null) return '–';
+            const m = Math.floor(sec / 60);
+            const s = (sec % 60).toFixed(3).padStart(6, '0');
+            return m > 0 ? `${m}:${s}` : `${s}`;
+        }
+        function posBadge(pos) {
+            if (pos == null) return '<span class="pos-badge dnf">DNF</span>';
+            if (pos === 1) return `<span class="pos-badge p1">1</span>`;
+            if (pos === 2) return `<span class="pos-badge p2">2</span>`;
+            if (pos === 3) return `<span class="pos-badge p3">3</span>`;
+            return `<span class="pos-badge">${pos}</span>`;
+        }
+        function loader(id, show) {
+            document.getElementById('loader-' + id).classList.toggle('show', show);
+        }
+        function showErr(id, msg) {
+            const el = document.getElementById('err-' + id);
+            el.textContent = msg;
+            el.classList.toggle('show', !!msg);
+        }
+
+        // Team colours (approx 2025)
+        const TEAM_COLORS = {
+            'Mercedes': '#00d2be', 'Ferrari': '#e8002d', 'Red Bull Racing': '#3671c6',
+            'McLaren': '#ff8000', 'Aston Martin': '#358c75', 'Alpine': '#0093cc',
+            'Williams': '#64c4ff', 'Racing Bulls': '#6692ff', 'Haas F1 Team': '#b6babd',
+            'Audi': '#e5e5e5', 'Cadillac': '#ffffff',
+        };
+        function teamBar(team) {
+            const c = TEAM_COLORS[team] || '#555';
+            return `<span class="team-bar" style="background:${c}"></span>`;
+        }
+
+        // ── MEETINGS ────────────────────────────────────────────────────────────
+        let meetingsLoaded = false;
+        let allMeetings = [];
+
+        async function loadMeetings() {
+            meetingsLoaded = true;
+            loader('meetings', true);
+            showErr('meetings', '');
+            try {
+                allMeetings = await apiFetch('meetings');
+                allMeetings.sort((a, b) => (b.year - a.year) || (a.meeting_key - b.meeting_key));
+
+                // Year tabs
+                const years = [...new Set(allMeetings.map(m => m.year))].sort((a, b) => b - a);
+                const tabsEl = document.getElementById('year-tabs');
+                tabsEl.innerHTML = years.map((y, i) =>
+                    `<button class="year-tab ${i === 0 ? 'active' : ''}" onclick="filterYear(${y}, this)">${y}</button>`
+                ).join('');
+
+                filterYear(years[0], tabsEl.querySelector('.active'));
+            } catch (e) {
+                showErr('meetings', 'Error al cargar GPs: ' + e.message);
+            }
+            loader('meetings', false);
+        }
+
+        function filterYear(year, btn) {
+            document.querySelectorAll('.year-tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            const filtered = allMeetings.filter(m => m.year === year);
+            renderMeetings(filtered);
+        }
+
+        function renderMeetings(list) {
+            const grid = document.getElementById('meetings-grid');
+            grid.innerHTML = list.map(m => `
+    <div class="meeting-card" onclick="selectMeeting(${m.meeting_key}, '${m.meeting_name?.replace(/'/g, "\\'") || "?"}')">
+      <div class="meeting-key-tag">#${m.meeting_key}</div>
+      <div class="meeting-year">${m.year} · Ronda ${m.meeting_official_name?.match(/\d+/)?.[0] || ''}</div>
+      <div class="meeting-name">${m.meeting_name || '?'}</div>
+      <div class="meeting-circuit">📍 ${m.circuit_short_name || '?'}, ${m.country_name || '?'}</div>
+    </div>
+  `).join('');
+        }
+
+        function selectMeeting(key, name) {
+            // pre-fill all inputs
+            ['res-meeting', 'laps-meeting', 'champ-meeting', 'pits-meeting', 'wx-meeting'].forEach(id => {
+                document.getElementById(id).value = key;
+            });
+            // Show a brief flash notification
+            const notice = document.createElement('div');
+            notice.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;background:#1a1a1a;border:1px solid var(--red);color:#fff;font-family:var(--head);font-size:0.9rem;font-weight:700;padding:0.8rem 1.4rem;border-radius:4px;z-index:999;letter-spacing:0.05em;text-transform:uppercase;';
+            notice.textContent = `🏁 ${name} seleccionado`;
+            document.body.appendChild(notice);
+            setTimeout(() => notice.remove(), 2500);
+        }
+
+        // ── RESULTS ─────────────────────────────────────────────────────────────
+        async function loadResults() {
+            const mk = document.getElementById('res-meeting').value.trim() || 'latest';
+            loader('results', true);
+            showErr('results', '');
+            document.getElementById('results-table').innerHTML = '';
+            document.getElementById('results-info').textContent = '';
+            try {
+                const [sessions, meetings] = await Promise.all([
+                    apiFetch('sessions', { meeting_key: mk, session_name: 'Race' }),
+                    apiFetch('meetings', { meeting_key: mk })
+                ]);
+                if (!sessions.length) throw new Error('No se encontró sesión de carrera para ese meeting_key');
+                const sk = sessions[0].session_key;
+                const gpName = meetings[0]?.meeting_name || '?';
+                const date = (sessions[0].date_start || '').slice(0, 10);
+
+                document.getElementById('results-info').textContent = `🏁 ${gpName}  ·  Race  ·  ${date}  ·  session_key: ${sk}`;
+
+                const [results, drivers] = await Promise.all([
+                    apiFetch('session_result', { session_key: sk }),
+                    apiFetch('drivers', { session_key: sk })
+                ]);
+
+                const dMap = {};
+                drivers.forEach(d => dMap[d.driver_number] = d);
+                results.sort((a, b) => (a.position || 999) - (b.position || 999));
+
+                const table = document.getElementById('results-table');
+                table.innerHTML = `
+      <thead><tr>
+        <th>Pos</th><th>N°</th><th>Piloto</th><th>Equipo</th>
+      </tr></thead>
+      <tbody>
+        ${results.map(r => {
+                    const num = r.driver_number;
+                    const d = dMap[num] || {};
+                    const team = d.team_name || '–';
+                    return `<tr>
+            <td>${posBadge(r.position)}</td>
+            <td><span class="drv-num">${num ?? '?'}</span></td>
+            <td>${teamBar(team)}${d.full_name || `#${num}`}</td>
+            <td style="color:var(--dim)">${team}</td>
+          </tr>`;
+                }).join('')}
+      </tbody>`;
+            } catch (e) {
+                showErr('results', e.message);
+            }
+            loader('results', false);
+        }
+
+        // ── LAPS ─────────────────────────────────────────────────────────────────
+        async function loadLapSessions() {
+            const mk = document.getElementById('laps-meeting').value.trim() || 'latest';
+            showErr('laps', '');
+            const sel = document.getElementById('laps-session');
+            sel.innerHTML = '<option>Cargando…</option>';
+            document.getElementById('laps-driver-row').style.display = 'none';
+            try {
+                const sessions = await apiFetch('sessions', { meeting_key: mk });
+                if (!sessions.length) throw new Error('Sin sesiones para ese meeting_key');
+                sel.innerHTML = sessions.map(s =>
+                    `<option value="${s.session_key}">${s.session_name} (${(s.date_start || '').slice(0, 10)})</option>`
+                ).join('');
+                document.getElementById('laps-driver-row').style.display = 'flex';
+                await loadLapDrivers();
+                sel.onchange = loadLapDrivers;
+            } catch (e) {
+                showErr('laps', e.message);
+                sel.innerHTML = '<option value="">— error —</option>';
+            }
+        }
+
+        async function loadLapDrivers() {
+            const sk = document.getElementById('laps-session').value;
+            if (!sk) return;
+            const dSel = document.getElementById('laps-driver');
+            dSel.innerHTML = '<option>Cargando…</option>';
+            try {
+                const drivers = await apiFetch('drivers', { session_key: sk });
+                drivers.sort((a, b) => a.driver_number - b.driver_number);
+                dSel.innerHTML = drivers.map(d =>
+                    `<option value="${d.driver_number}">${d.driver_number} – ${d.full_name || '?'} (${d.team_name || '?'})</option>`
+                ).join('');
+            } catch (e) {
+                dSel.innerHTML = '<option value="">— error —</option>';
+            }
+        }
+
+        async function loadLaps() {
+            const sk = document.getElementById('laps-session').value;
+            const dn = document.getElementById('laps-driver').value;
+            if (!sk || !dn) return;
+            loader('laps', true);
+            showErr('laps', '');
+            document.getElementById('laps-table').innerHTML = '';
+            document.getElementById('laps-info').textContent = '';
+            try {
+                const [laps, drivers] = await Promise.all([
+                    apiFetch('laps', { session_key: sk, driver_number: dn }),
+                    apiFetch('drivers', { session_key: sk, driver_number: dn })
+                ]);
+                const drv = drivers[0] || {};
+                laps.sort((a, b) => a.lap_number - b.lap_number);
+
+                // Best lap
+                const times = laps.map(l => l.lap_duration).filter(t => t != null);
+                const best = times.length ? Math.min(...times) : null;
+
+                document.getElementById('laps-info').textContent =
+                    `${drv.full_name || '#' + dn}  ·  ${drv.team_name || ''}  ·  ${laps.length} vueltas`;
+
+                const table = document.getElementById('laps-table');
+                table.innerHTML = `
+      <thead><tr>
+        <th class="num">Vlt</th>
+        <th class="num">Tiempo</th>
+        <th class="num">S1</th>
+        <th class="num">S2</th>
+        <th class="num">S3</th>
+        <th>Compuesto</th>
+      </tr></thead>
+      <tbody>
+        ${laps.map(l => {
+                    const isBest = l.lap_duration != null && l.lap_duration === best;
+                    const tc = isBest ? ' class="fast"' : '';
+                    return `<tr>
+            <td class="num">${l.lap_number ?? '–'}</td>
+            <td class="num"${tc}>${fmtTime(l.lap_duration)}</td>
+            <td class="num">${fmtTime(l.duration_sector_1)}</td>
+            <td class="num">${fmtTime(l.duration_sector_2)}</td>
+            <td class="num">${fmtTime(l.duration_sector_3)}</td>
+            <td style="color:var(--dim);font-family:var(--mono);font-size:0.75rem">${l.compound || '–'}</td>
+          </tr>`;
+                }).join('')}
+      </tbody>`;
+            } catch (e) {
+                showErr('laps', e.message);
+            }
+            loader('laps', false);
+        }
+
+        // ── CHAMPIONSHIP ─────────────────────────────────────────────────────────
+        async function loadChampionship() {
+            const mk = document.getElementById('champ-meeting').value.trim() || 'latest';
+            loader('champ', true);
+            showErr('champ', '');
+            document.getElementById('champ-table').innerHTML = '';
+            try {
+                const sessions = await apiFetch('sessions', { meeting_key: mk, session_name: 'Race' });
+                if (!sessions.length) throw new Error('Sin sesión de carrera para ese meeting_key');
+                const sk = sessions[0].session_key;
+                const [standings, drivers] = await Promise.all([
+                    apiFetch('championship_drivers', { session_key: sk }),
+                    apiFetch('drivers', { session_key: sk })
+                ]);
+                if (!standings.length) throw new Error('Sin datos de campeonato para esa sesión (puede ser muy reciente)');
+                const dMap = {};
+                drivers.forEach(d => dMap[d.driver_number] = d);
+                standings.sort((a, b) => (a.position_current || 999) - (b.position_current || 999));
+                const maxPts = standings[0]?.points_current || 1;
+
+                const table = document.getElementById('champ-table');
+                table.innerHTML = `
+      <thead><tr>
+        <th>Pos</th><th>Piloto</th><th>Equipo</th>
+        <th class="num">Puntos</th><th class="num">+Ronda</th><th style="min-width:140px"></th>
+      </tr></thead>
+      <tbody>
+        ${standings.map(s => {
+                    const d = dMap[s.driver_number] || {};
+                    const team = d.team_name || '–';
+                    const gained = (s.points_current || 0) - (s.points_start || s.points_current || 0);
+                    const pct = ((s.points_current || 0) / maxPts * 100).toFixed(1);
+                    const color = TEAM_COLORS[team] || 'var(--red)';
+                    return `<tr>
+            <td>${posBadge(s.position_current)}</td>
+            <td>${teamBar(team)}${d.full_name || '#' + s.driver_number}</td>
+            <td style="color:var(--dim)">${team}</td>
+            <td class="num" style="font-weight:700">${s.points_current ?? '–'}</td>
+            <td class="num" style="color:${gained > 0 ? '#4caf50' : gained < 0 ? '#f44336' : 'var(--dim)'}">
+              ${gained > 0 ? '+' : ''}${gained}
+            </td>
+            <td>
+              <div class="pts-bar-wrap">
+                <div class="pts-bar-bg">
+                  <div class="pts-bar-fill" style="width:${pct}%;background:${color}"></div>
+                </div>
+              </div>
+            </td>
+          </tr>`;
+                }).join('')}
+      </tbody>`;
+            } catch (e) {
+                showErr('champ', e.message);
+            }
+            loader('champ', false);
+        }
+
+        // ── PITS ──────────────────────────────────────────────────────────────────
+        async function loadPits() {
+            const mk = document.getElementById('pits-meeting').value.trim() || 'latest';
+            loader('pits', true);
+            showErr('pits', '');
+            document.getElementById('pits-table').innerHTML = '';
+            try {
+                const sessions = await apiFetch('sessions', { meeting_key: mk, session_name: 'Race' });
+                if (!sessions.length) throw new Error('Sin sesión de carrera para ese meeting_key');
+                const sk = sessions[0].session_key;
+                const [pits, drivers] = await Promise.all([
+                    apiFetch('pit', { session_key: sk }),
+                    apiFetch('drivers', { session_key: sk })
+                ]);
+                if (!pits.length) throw new Error('Sin datos de pits');
+                const dMap = {};
+                drivers.forEach(d => dMap[d.driver_number] = d);
+                pits.sort((a, b) => (a.lap_number || 0) - (b.lap_number || 0) || (a.driver_number || 0) - (b.driver_number || 0));
+
+                const table = document.getElementById('pits-table');
+                table.innerHTML = `
+      <thead><tr>
+        <th class="num">Vuelta</th><th>Piloto</th><th>Equipo</th>
+        <th class="num">Parada (s)</th><th class="num">Carril (s)</th>
+      </tr></thead>
+      <tbody>
+        ${pits.map(p => {
+                    const d = dMap[p.driver_number] || {};
+                    const team = d.team_name || '–';
+                    const stop = p.stop_duration;
+                    const lane = p.lane_duration;
+                    return `<tr>
+            <td class="num">${p.lap_number ?? '–'}</td>
+            <td>${teamBar(team)}${d.full_name || '#' + p.driver_number}</td>
+            <td style="color:var(--dim)">${team}</td>
+            <td class="num">${stop != null ? stop.toFixed(2) + 's' : '–'}</td>
+            <td class="num">${lane != null ? lane.toFixed(2) + 's' : '–'}</td>
+          </tr>`;
+                }).join('')}
+      </tbody>`;
+            } catch (e) {
+                showErr('pits', e.message);
+            }
+            loader('pits', false);
+        }
+
+        // ── WEATHER ──────────────────────────────────────────────────────────────
+        async function loadWeatherSessions() {
+            const mk = document.getElementById('wx-meeting').value.trim() || 'latest';
+            showErr('wx', '');
+            const sel = document.getElementById('wx-session');
+            sel.innerHTML = '<option>Cargando…</option>';
+            document.getElementById('wx-go-btn').style.display = 'none';
+            try {
+                const sessions = await apiFetch('sessions', { meeting_key: mk });
+                if (!sessions.length) throw new Error('Sin sesiones');
+                sel.innerHTML = sessions.map(s =>
+                    `<option value="${s.session_key}">${s.session_name} (${(s.date_start || '').slice(0, 10)})</option>`
+                ).join('');
+                document.getElementById('wx-go-btn').style.display = 'flex';
+            } catch (e) {
+                showErr('wx', e.message);
+                sel.innerHTML = '<option value="">— error —</option>';
+            }
+        }
+
+        async function loadWeather() {
+            const sk = document.getElementById('wx-session').value;
+            if (!sk) return;
+            loader('wx', true);
+            showErr('wx', '');
+            document.getElementById('wx-cards').innerHTML = '';
+            document.getElementById('wx-table').innerHTML = '';
+            try {
+                const weather = await apiFetch('weather', { session_key: sk });
+                if (!weather.length) throw new Error('Sin datos meteorológicos');
+
+                const pick = k => weather.map(w => w[k]).filter(v => v != null);
+                const avg = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
+
+                const stats = [
+                    { label: 'Temp. Aire', key: 'air_temperature', unit: '°C' },
+                    { label: 'Temp. Pista', key: 'track_temperature', unit: '°C' },
+                    { label: 'Humedad', key: 'humidity', unit: '%' },
+                    { label: 'Presión', key: 'pressure', unit: 'mbar' },
+                    { label: 'Vel. Viento', key: 'wind_speed', unit: 'm/s' },
+                ];
+
+                const cards = document.getElementById('wx-cards');
+                cards.innerHTML = stats.map(s => {
+                    const arr = pick(s.key);
+                    if (!arr.length) return '';
+                    return `<div class="stat-card">
+        <div class="stat-label">${s.label}</div>
+        <div class="stat-value">${avg(arr).toFixed(1)}<span class="stat-unit">${s.unit}</span></div>
+        <div class="stat-range">↓ ${Math.min(...arr).toFixed(1)} · ↑ ${Math.max(...arr).toFixed(1)}</div>
+      </div>`;
+                }).join('');
+
+                // Rain
+                const rain = weather.some(w => w.rainfall);
+                const rainCard = `<div class="stat-card">
+      <div class="stat-label">Lluvia</div>
+      <div class="stat-value" style="font-size:2rem">${rain ? '🌧️' : '☀️'}</div>
+      <div class="stat-range">${rain ? 'Detectada' : 'No detectada'}</div>
+    </div>`;
+                cards.innerHTML += rainCard;
+
+                // Sample table (every 10th reading)
+                const sampled = weather.filter((_, i) => i % Math.max(1, Math.floor(weather.length / 30)) === 0);
+                const table = document.getElementById('wx-table');
+                table.innerHTML = `
+      <thead><tr>
+        <th>Hora (UTC)</th>
+        <th class="num">Aire °C</th><th class="num">Pista °C</th>
+        <th class="num">Hum %</th><th class="num">Viento m/s</th><th>Lluvia</th>
+      </tr></thead>
+      <tbody>
+        ${sampled.map(w => `<tr>
+          <td style="font-family:var(--mono);font-size:0.75rem;color:var(--dim)">${(w.date || '').slice(11, 19)}</td>
+          <td class="num">${w.air_temperature ?? '–'}</td>
+          <td class="num">${w.track_temperature ?? '–'}</td>
+          <td class="num">${w.humidity ?? '–'}</td>
+          <td class="num">${w.wind_speed ?? '–'}</td>
+          <td>${w.rainfall ? '🌧️' : '–'}</td>
+        </tr>`).join('')}
+      </tbody>`;
+            } catch (e) {
+                showErr('wx', e.message);
+            }
+            loader('wx', false);
+        }
+    </script>
+</body>
+
+</html>

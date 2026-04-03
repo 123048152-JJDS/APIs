@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 Explorer</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;800;900&family=Barlow:wght@300;400;500&family=Share+Tech+Mono&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="F1.css">
+</head>
+
+<body>
+
+    <header>
+        <div class="logo"> 🏎️ F1 <span>Explorer</span>
+            <span class="logo-badge">LIVE</span>
+        </div>
+        <div class="api-tag">openf1.org · v1</div>
+    </header>
+
+    <div class="app">
+
+        <!-- SIDEBAR -->
+        <aside>
+            <div class="sidebar-label">Consultas</div>
+            <button class="nav-btn active" onclick="showPanel('welcome')" id="nav-welcome">
+                <span class="nav-icon">🏁</span> Inicio
+            </button>
+            <button class="nav-btn" onclick="showPanel('meetings')" id="nav-meetings">
+                <span class="nav-icon">📅</span> Grandes Premios
+            </button>
+            <button class="nav-btn" onclick="showPanel('results')" id="nav-results">
+                <span class="nav-icon">🥇</span> Resultado Carrera
+            </button>
+            <button class="nav-btn" onclick="showPanel('laps')" id="nav-laps">
+                <span class="nav-icon">⏱️</span> Tiempos por Vuelta
+            </button>
+            <button class="nav-btn" onclick="showPanel('championship')" id="nav-championship">
+                <span class="nav-icon">🏆</span> Campeonato
+            </button>
+            <button class="nav-btn" onclick="showPanel('pits')" id="nav-pits">
+                <span class="nav-icon">🔧</span> Paradas en Pits
+            </button>
+            <button class="nav-btn" onclick="showPanel('weather')" id="nav-weather">
+                <span class="nav-icon">🌡️</span> Clima Sesión
+            </button>
+        </aside>
+
+        <!-- MAIN -->
+        <main>
+
+            <!-- WELCOME -->
+            <div class="panel active" id="panel-welcome">
+                <div class="welcome">
+                    <div class="welcome-icon">🏎️</div>
+                    <div class="welcome-title">F1 Explorer</div>
+                    <div class="welcome-sub">Consulta resultados, tiempos, campeonato y más de la Fórmula 1. Datos desde
+                        2023 vía OpenF1 API, sin autenticación.</div>
+                </div>
+            </div>
+
+            <!-- GRANDES PREMIOS -->
+            <div class="panel" id="panel-meetings">
+                <div class="section-head">
+                    <div class="section-title">Grandes Premios</div>
+                    <div class="section-sub">Selecciona un GP para usarlo en otras secciones</div>
+                </div>
+                <div class="year-tabs" id="year-tabs"></div>
+                <div id="loader-meetings" class="loader">
+                    <div class="spinner"></div> Cargando GPs…
+                </div>
+                <div id="err-meetings" class="error-box"></div>
+                <div class="meetings-grid" id="meetings-grid"></div>
+            </div>
+
+            <!-- RESULTADO CARRERA -->
+            <div class="panel" id="panel-results">
+                <div class="section-head">
+                    <div class="section-title">Resultado de Carrera</div>
+                    <div class="section-sub">Posiciones finales</div>
+                </div>
+                <div class="controls">
+                    <div class="field">
+                        <label>Meeting Key</label>
+                        <input type="text" id="res-meeting" placeholder="ej. 1281 o latest" value="latest">
+                    </div>
+                    <button class="btn" onclick="loadResults()">▶ Consultar</button>
+                </div>
+                <div id="loader-results" class="loader">
+                    <div class="spinner"></div> Cargando resultado…
+                </div>
+                <div id="err-results" class="error-box"></div>
+                <div id="results-info"
+                    style="margin-bottom:1rem;font-family:var(--mono);font-size:0.75rem;color:var(--dim)"></div>
+                <div class="result-wrap">
+                    <table id="results-table"></table>
+                </div>
+            </div>
+
+            <!-- TIEMPOS POR VUELTA -->
+            <div class="panel" id="panel-laps">
+                <div class="section-head">
+                    <div class="section-title">Tiempos por Vuelta</div>
+                    <div class="section-sub">Detalle sector por sector</div>
+                </div>
+                <div class="controls">
+                    <div class="field">
+                        <label>Meeting Key</label>
+                        <input type="text" id="laps-meeting" placeholder="ej. 1281 o latest" value="latest">
+                    </div>
+                    <div class="field">
+                        <label>Sesión</label>
+                        <div class="select-wrap">
+                            <select id="laps-session" >
+                                <option value="">— carga sesiones —</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn" onclick="loadLapSessions()">🔍 Cargar sesiones</button>
+                </div>
+                <div class="controls" id="laps-driver-row" style="display:none">
+                    <div class="field">
+                        <label>Piloto</label>
+                        <div class="select-wrap">
+                            <select id="laps-driver">
+                                <option value="">— elige piloto —</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn" onclick="loadLaps()">▶ Ver vueltas</button>
+                </div>
+                <div id="loader-laps" class="loader">
+                    <div class="spinner"></div> Cargando vueltas…
+                </div>
+                <div id="err-laps" class="error-box"></div>
+                <div id="laps-info"
+                    style="margin-bottom:1rem;font-family:var(--mono);font-size:0.75rem;color:var(--dim)"></div>
+                <div class="result-wrap">
+                    <table id="laps-table"></table>
+                </div>
+            </div>
+
+            <!-- CAMPEONATO -->
+            <div class="panel" id="panel-championship">
+                <div class="section-head">
+                    <div class="section-title">Campeonato de Pilotos</div>
+                    <div class="section-sub">Standings tras cada carrera</div>
+                </div>
+                <div class="controls">
+                    <div class="field">
+                        <label>Meeting Key (Race)</label>
+                        <input type="text" id="champ-meeting" placeholder="ej. 1281 o latest" value="latest">
+                    </div>
+                    <button class="btn" onclick="loadChampionship()">▶ Consultar</button>
+                </div>
+                <div id="loader-champ" class="loader">
+                    <div class="spinner"></div> Cargando campeonato…
+                </div>
+                <div id="err-champ" class="error-box"></div>
+                <div class="result-wrap">
+                    <table id="champ-table"></table>
+                </div>
+            </div>
+
+            <!-- PITS -->
+            <div class="panel" id="panel-pits">
+                <div class="section-head">
+                    <div class="section-title">Paradas en Pits</div>
+                    <div class="section-sub">Tiempos de parada en boxes</div>
+                </div>
+                <div class="controls">
+                    <div class="field">
+                        <label>Meeting Key</label>
+                        <input type="text" id="pits-meeting" placeholder="ej. 1281 o latest" value="latest">
+                    </div>
+                    <button class="btn" onclick="loadPits()">▶ Consultar</button>
+                </div>
+                <div id="loader-pits" class="loader">
+                    <div class="spinner"></div> Cargando pits…
+                </div>
+                <div id="err-pits" class="error-box"></div>
+                <div class="result-wrap">
+                    <table id="pits-table"></table>
+                </div>
+            </div>
+
+            <!-- WEATHER -->
+            <div class="panel" id="panel-weather">
+                <div class="section-head">
+                    <div class="section-title">Clima de Sesión</div>
+                    <div class="section-sub">Temperatura, humedad y lluvia</div>
+                </div>
+                <div class="controls">
+                    <div class="field">
+                        <label>Meeting Key</label>
+                        <input type="text" id="wx-meeting" placeholder="ej. 1281 o latest" value="latest">
+                    </div>
+                    <div class="field">
+                        <label>Sesión</label>
+                        <div class="select-wrap">
+                            <select id="wx-session">    <option value="">— carga sesiones —</option>    </select>
+                        </div>
+                    </div>
+                    <button class="btn" onclick="loadWeatherSessions()">🔍 Cargar sesiones</button>
+                    <button class="btn" id="wx-go-btn" onclick="loadWeather()" style="display:none">▶ Ver clima</button>
+                </div>
+                <div id="loader-wx" class="loader">
+                    <div class="spinner"></div> Cargando clima…
+                </div>
+                <div id="err-wx" class="error-box"></div>
+                <div id="wx-cards" class="weather-grid"></div>
+                <div class="result-wrap">
+                    <table id="wx-table"></table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="F1.js"></script>
+</body>
+
+</html>
